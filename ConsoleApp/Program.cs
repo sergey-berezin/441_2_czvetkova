@@ -55,12 +55,6 @@ namespace ConsoleApp
             string downloadUrl = "https://storage.yandexcloud.net/dotnet4/bert-large-uncased-whole-word-masking-finetuned-squad.onnx";
             string NNFileName = "bert-large-uncased-whole-word-masking-finetuned-squad.onnx";
             var neuralNetwork = new NuGetNN.NeuralNetwork(downloadUrl, NNFileName, new FileService());
-            string error = neuralNetwork.DownloadNN();
-            if (!String.Equals(error, "empty"))
-            {
-                System.Console.WriteLine(error);
-                return;
-            }
 
             var tasks = new List<Task>();
             var token = new CancellationTokenSource(); 
@@ -70,7 +64,8 @@ namespace ConsoleApp
             while (question != "")
             { 
                 // NN work + print the result
-                var task = NNAnswerAsync(neuralNetwork, question, hobbit, token).ContinueWith(x => {
+                var task = NeuralNetwork.NNAnswerAsync(question, hobbit, token.Token).ContinueWith(x => {
+                    Console.WriteLine("\nYour question: {0}", question);
                     Console.WriteLine("NN's answer: {0}", x.Result);
                 });
                 tasks.Add(task);
@@ -85,16 +80,6 @@ namespace ConsoleApp
             {
                 Console.WriteLine("Error waiting tasks: " + ex.Message);
             }
-        }
-        public static async Task<string> NNAnswerAsync(NeuralNetwork neuralNetwork, string question, string text, CancellationTokenSource token)
-        { 
-            token.Cancel();
-            if (token.IsCancellationRequested)
-                return "Cancelled.";
-            string answer = neuralNetwork.NNAnswer(question, text);
-            if (token.IsCancellationRequested)
-                return "Cancelled.";
-            return answer;
         }
     }
 }
