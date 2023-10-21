@@ -9,7 +9,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NuGetNN {
+namespace NuGetNN
+{
 
     public interface IFileServices
     {
@@ -28,7 +29,10 @@ namespace NuGetNN {
             NeuralNetwork.downloadUrl = downloadUrl;
             NeuralNetwork.NNFileName = NNFileName;
             NeuralNetwork.fileServices = fileServices;
-            NeuralNetwork.session = new InferenceSession("bert-large-uncased-whole-word-masking-finetuned-squad.onnx");
+            if (fileServices.Exists(NNFileName))
+            {
+                NeuralNetwork.session = new InferenceSession("bert-large-uncased-whole-word-masking-finetuned-squad.onnx");
+            }
         }
         public static void DownloadNN()
         {
@@ -42,18 +46,16 @@ namespace NuGetNN {
             if (!fileServices.Exists(NNFileName))
             {
                 throw new FileNotFoundException($"Failed to download neural network file after three attempts.");
-            }   
+            }
+            else if (session == null)
+            {
+                NeuralNetwork.session = new InferenceSession("bert-large-uncased-whole-word-masking-finetuned-squad.onnx");
+            }
         }
         public static async Task<string> NNAnswerAsync(string question, string hobbit, CancellationToken token)
         {
-            await semaphore.WaitAsync(token);
             try
             {
-                if (!fileServices.Exists(NNFileName))
-                {
-                    DownloadNN();
-                } 
-
                 var sentence = ("{\"question\": \"@QSTN\", \"context\": \"@CTX\"}".Replace("@CTX", hobbit)).Replace("@QSTN", question);
                 // Console.WriteLine(sentence);
 
@@ -78,15 +80,24 @@ namespace NuGetNN {
                 var input_ids = ConvertToTensor(bertInput.InputIds, bertInput.InputIds.Length);
                 var attention_mask = ConvertToTensor(bertInput.AttentionMask, bertInput.InputIds.Length);
                 var token_type_ids = ConvertToTensor(bertInput.TypeIds, bertInput.InputIds.Length);
-            
+
                 // Create input data for session.
-                var input = new List<NamedOnnxValue>() { NamedOnnxValue.CreateFromTensor("input_ids", input_ids), 
-                                                        NamedOnnxValue.CreateFromTensor("input_mask", attention_mask), 
+                var input = new List<NamedOnnxValue>() { NamedOnnxValue.CreateFromTensor("input_ids", input_ids),
+                                                        NamedOnnxValue.CreateFromTensor("input_mask", attention_mask),
                                                         NamedOnnxValue.CreateFromTensor("segment_ids", token_type_ids) };
-            
+
                 token.ThrowIfCancellationRequested();
+
+                await semaphore.WaitAsync(token);
+
                 // Run session and send the input data in to get inference output. 
+                if (!fileServices.Exists(NNFileName))
+                {
+                    DownloadNN();
+                }
                 var output = session.Run(input);
+
+                semaphore.Release();
 
                 // Call ToList on the output.
                 // Get the First and Last item in the list.
@@ -95,7 +106,7 @@ namespace NuGetNN {
                 List<float> endLogits = (output.ToList().Last().Value as IEnumerable<float>).ToList();
 
                 // Get the Index of the Max value from the output lists.
-                var startIndex = startLogits.ToList().IndexOf(startLogits.Max()); 
+                var startIndex = startLogits.ToList().IndexOf(startLogits.Max());
                 var endIndex = endLogits.ToList().IndexOf(endLogits.Max());
 
                 // From the list of the original tokens in the sentence
@@ -109,14 +120,14 @@ namespace NuGetNN {
                 string answer = String.Join(" ", predictedTokens);
                 return answer;
             }
-            finally
+            catch (Exception ex)
             {
-                semaphore.Release();
+                return ("Error NN answering: " + ex.Message);
             }
         }
         public static Tensor<long> ConvertToTensor(long[] inputArray, int inputDimension)
         {
-             // Create a tensor with the shape the model is expecting. Here we are sending in 1 batch with the inputDimension as the amount of tokens.
+            // Create a tensor with the shape the model is expecting. Here we are sending in 1 batch with the inputDimension as the amount of tokens.
             Tensor<long> input = new DenseTensor<long>(new[] { 1, inputDimension });
 
             // Loop through the inputArray (InputIds, AttentionMask and TypeIds)
@@ -124,12 +135,12 @@ namespace NuGetNN {
             {
                 // Add each to the input Tenor result.
                 // Set index and array value of each input Tensor.
-                input[0,i] = inputArray[i];
+                input[0, i] = inputArray[i];
             }
             return input;
         }
     }
-    
+
     public class BertInput
     {
         public long[] InputIds { get; set; }

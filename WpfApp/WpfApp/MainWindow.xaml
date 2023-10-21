@@ -1,0 +1,23 @@
+﻿<Window x:Class="WpfApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfApp"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="810">
+    <Grid>
+        <ListView Name="ChatListView" d:ItemsSource="{d:SampleData ItemCount=5}" Height="NaN" Margin="254,24,21,106" Width="NaN"/>
+        <TextBox Text="Your question..." x:Name="QuestionTextBox" HorizontalAlignment="Left" Height="19" Margin="254,372,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="471"/>
+        <Button Name="SendButton" Content="Send" HorizontalAlignment="Left" Height="19" Margin="735,372,0,0" VerticalAlignment="Top" Width="49" Click="QuestionSend_Click" />
+        <TextBlock HorizontalAlignment="Left" Margin="254,352,0,0" TextWrapping="Wrap" Text="Enter your question:" VerticalAlignment="Top" Width="295"/>
+        <Button Name="CancelButton" Content="Cancel" HorizontalAlignment="Left" Height="42" Margin="143,28,0,0" VerticalAlignment="Top" Width="81" Foreground="Red" Click="Cancel_Click"/>
+        <Button Name="UploadButton" Content="Upload the text file" HorizontalAlignment="Left" Margin="28,355,0,0" VerticalAlignment="Top" Height="36" Width="196" Click="UploadTextFile_Click"/>
+        <TextBlock Name="UploadTextBlock" HorizontalAlignment="Left" Margin="28,315,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="31" Width="196" Foreground="#FFB22222"/>
+        <TextBlock HorizontalAlignment="Left" Height="20" Margin="254,4,0,0" TextWrapping="Wrap" Text="NN Chat" VerticalAlignment="Top" Width="94"/>
+        <ProgressBar Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="100" HorizontalAlignment="Left" Height="26" Margin="28,192,0,0" VerticalAlignment="Top" Width="196"/>
+        <Label Name="DownloadPercentageLabel" Content="100%" HorizontalAlignment="Left" Margin="113,191,0,0" VerticalAlignment="Top"/>
+        <TextBlock Name="DownloadTextBlock" HorizontalAlignment="Left" Margin="28,153,0,0" TextWrapping="Wrap" Text="The NN model is downloaded successfully." VerticalAlignment="Top" Height="34" Width="196"/>
+
+    </Grid>
+</Window>
