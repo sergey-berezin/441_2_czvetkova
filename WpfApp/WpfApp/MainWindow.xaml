@@ -7,7 +7,9 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="810">
     <Grid>
-        <ListView Name="ChatListView" d:ItemsSource="{d:SampleData ItemCount=5}" Height="NaN" Margin="254,24,21,106" Width="NaN"/>
+        <ScrollViewer Name="ChatScrollViewer" ScrollViewer.VerticalScrollBarVisibility="Visible" ScrollViewer.CanContentScroll="False" Margin="254,24,21,106">
+            <ListView Name="ChatListView" d:ItemsSource="{d:SampleData ItemCount=5}" Height="NaN" Width="NaN" />
+        </ScrollViewer>
         <TextBox Text="Your question..." x:Name="QuestionTextBox" HorizontalAlignment="Left" Height="19" Margin="254,372,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="471"/>
         <Button Name="SendButton" Content="Send" HorizontalAlignment="Left" Height="19" Margin="735,372,0,0" VerticalAlignment="Top" Width="49" Click="QuestionSend_Click" />
         <TextBlock HorizontalAlignment="Left" Margin="254,352,0,0" TextWrapping="Wrap" Text="Enter your question:" VerticalAlignment="Top" Width="295"/>
@@ -18,6 +20,6 @@
         <ProgressBar Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="100" HorizontalAlignment="Left" Height="26" Margin="28,192,0,0" VerticalAlignment="Top" Width="196"/>
         <Label Name="DownloadPercentageLabel" Content="100%" HorizontalAlignment="Left" Margin="113,191,0,0" VerticalAlignment="Top"/>
         <TextBlock Name="DownloadTextBlock" HorizontalAlignment="Left" Margin="28,153,0,0" TextWrapping="Wrap" Text="The NN model is downloaded successfully." VerticalAlignment="Top" Height="34" Width="196"/>
-
+     
     </Grid>
 </Window>

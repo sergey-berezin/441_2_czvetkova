@@ -45,6 +45,7 @@ namespace WpfApp
             {
                 UploadTextBlock.Text = "The text file " + textFileName.Substring(textFileName.LastIndexOf('\\') + 1) + " is selected.";
                 hobbit = File.ReadAllText(textFileName);
+                AddToChat("Text:\n" + hobbit);
             }
             else 
             {
@@ -65,6 +66,7 @@ namespace WpfApp
             {
                 UploadTextBlock.Text = "The text file " + textFileName.Substring(textFileName.LastIndexOf('\\') + 1) + " is selected.";
                 hobbit = File.ReadAllText(textFileName);
+                AddToChat("Text:\n" + hobbit);
                 SendButton.IsEnabled = true;
                 QuestionTextBox.IsEnabled = true;
             }
@@ -75,7 +77,7 @@ namespace WpfApp
                 QuestionTextBox.IsEnabled = false;
             }
         }
-        private void QuestionSend_Click(object sender, RoutedEventArgs e)
+        private async void QuestionSend_Click(object sender, RoutedEventArgs e)
         {
             string question = QuestionTextBox.Text;
             QuestionTextBox.Clear();
@@ -98,10 +100,10 @@ namespace WpfApp
             }
             else
             {
-                var answer = NuGetNN.NeuralNetwork.NNAnswerAsync(question, hobbit, token.Token).Result;
-                if (answer.Contains("system error number 13"))
+                var answer = await NuGetNN.NeuralNetwork.NNAnswerAsync(question, hobbit, token.Token);
+                if (answer == null)
                 {
-                    AddToChat("The NN model was not downloaded. Ask again when the download is finished.");
+                    AddToChat("The NN model was not downloaded. Please ask again.");
                 }
                 else
                 {
@@ -118,34 +120,42 @@ namespace WpfApp
         private void AddToChat(string message)
         {
             ChatListView.Items.Add(new ListViewItem { Content = message });
+            ChatScrollViewer.ScrollToBottom();
         }
         
-        public async void DownloadModelFileAsync(string downloadUrl, string NNFileName)
+        public async Task DownloadModelFileAsync(string downloadUrl, string NNFileName)
         {
             using (WebClient client = new WebClient())
             {
                 try
                 {
+                   
                     client.DownloadProgressChanged += (sender, e) =>
                     {
-                        currentMainWindow.DownloadProgressBar.Value = e.ProgressPercentage;
-                        currentMainWindow.DownloadPercentageLabel.Content = e.ProgressPercentage + "%";
-                        currentMainWindow.SendButton.IsEnabled = false;
-                        currentMainWindow.QuestionTextBox.IsEnabled = false;
+                        currentMainWindow.Dispatcher.BeginInvoke(() => 
+                        {
+                            currentMainWindow.DownloadProgressBar.Value = e.ProgressPercentage;
+                            currentMainWindow.DownloadPercentageLabel.Content = e.ProgressPercentage + "%";
+                            currentMainWindow.SendButton.IsEnabled = false;
+                            currentMainWindow.QuestionTextBox.IsEnabled = false;
+                        });
                     };
 
                     client.DownloadFileCompleted += (sender, e) =>
                     {
-                        if (e.Error == null)
-                        {
-                            currentMainWindow.DownloadTextBlock.Text = "The NN model is downloaded successfully.";
-                            currentMainWindow.SendButton.IsEnabled = true;
-                            currentMainWindow.QuestionTextBox.IsEnabled = true;
-                        }
-                        else
-                        {
-                            currentMainWindow.DownloadTextBlock.Text = "Failed to download NN model.";
-                        }
+                        currentMainWindow.Dispatcher.BeginInvoke(() =>
+                            {
+                            if (e.Error == null)
+                            {
+                                currentMainWindow.DownloadTextBlock.Text = "The NN model is downloaded successfully.";
+                                currentMainWindow.SendButton.IsEnabled = true;
+                                currentMainWindow.QuestionTextBox.IsEnabled = true;
+                            }
+                            else
+                            {
+                                currentMainWindow.DownloadTextBlock.Text = "Failed to download NN model.";
+                            }
+                        });
                     };
                     await client.DownloadFileTaskAsync(new Uri(downloadUrl), NNFileName);
                 }
@@ -168,7 +178,7 @@ namespace WpfApp
                 }
                 return File.Exists(NNFileName);
             }
-            public void DownloadFile(string downloadUrl, string NNFileName)
+            public async Task DownloadFile(string downloadUrl, string NNFileName)
             {
                 try
                 {
@@ -177,7 +187,7 @@ namespace WpfApp
                     currentMainWindow.DownloadPercentageLabel.Content = "0%";
                     currentMainWindow.DownloadProgressBar.Value = 0;
                     currentMainWindow.DownloadTextBlock.Text = "The NN model is being downloaded now. Please wait.";
-                    currentMainWindow.DownloadModelFileAsync(downloadUrl, NNFileName);
+                    await currentMainWindow.DownloadModelFileAsync(downloadUrl, NNFileName);
                 }
                 catch (WebException ex)
                 {

@@ -15,7 +15,7 @@ namespace NuGetNN
     public interface IFileServices
     {
         bool Exists(string NNFileName);
-        void DownloadFile(string downloadUrl, string NNFileName);
+        Task DownloadFile(string downloadUrl, string NNFileName);
     }
     public class NeuralNetwork
     {
@@ -34,13 +34,14 @@ namespace NuGetNN
                 NeuralNetwork.session = new InferenceSession("bert-large-uncased-whole-word-masking-finetuned-squad.onnx");
             }
         }
-        public static void DownloadNN()
+        public static async Task DownloadNN()
         {
             int maxAttempts = 3;
             int currentAttempt = 0;
             while (!fileServices.Exists(NNFileName) && currentAttempt < maxAttempts)
             {
-                fileServices.DownloadFile(downloadUrl, NNFileName);
+                await fileServices.DownloadFile(downloadUrl, NNFileName);
+
                 currentAttempt++;
             }
             if (!fileServices.Exists(NNFileName))
@@ -93,7 +94,9 @@ namespace NuGetNN
                 // Run session and send the input data in to get inference output. 
                 if (!fileServices.Exists(NNFileName))
                 {
-                    DownloadNN();
+                    await DownloadNN();
+                    semaphore.Release();
+                    return null;
                 }
                 var output = session.Run(input);
 
