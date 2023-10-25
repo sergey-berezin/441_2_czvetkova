@@ -14,7 +14,7 @@ using NuGetNN;
 
 namespace ConsoleApp
 {
-    internal class Program
+    public class Program
     {
         public class FileService : NuGetNN.IFileServices
         {
@@ -37,6 +37,7 @@ namespace ConsoleApp
                 }
             }
         }
+        
         public static async Task Main(string[] args)
         {
             if (args.Length == 0)
@@ -57,7 +58,7 @@ namespace ConsoleApp
             var neuralNetwork = new NuGetNN.NeuralNetwork(downloadUrl, NNFileName, new FileService());
 
             var tasks = new List<Task>();
-            var token = new CancellationTokenSource(); 
+            var token = new CancellationTokenSource();
             Console.Write("Ask a question: ");
             string question = Console.ReadLine();
             
