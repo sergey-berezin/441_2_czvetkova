@@ -20,6 +20,7 @@
         <ProgressBar Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="100" HorizontalAlignment="Left" Height="26" Margin="28,192,0,0" VerticalAlignment="Top" Width="196"/>
         <Label Name="DownloadPercentageLabel" Content="100%" HorizontalAlignment="Left" Margin="113,191,0,0" VerticalAlignment="Top"/>
         <TextBlock Name="DownloadTextBlock" HorizontalAlignment="Left" Margin="28,153,0,0" TextWrapping="Wrap" Text="The NN model is downloaded successfully." VerticalAlignment="Top" Height="34" Width="196"/>
-     
+        <Button Content="Clear chat history" Name="ClearChatHistoryButton"  Click="ClearChatHistory_Click" Foreground="Red" HorizontalAlignment="Left" Margin="124,97,0,0" VerticalAlignment="Top" Height="28" Width="119"/>
+
     </Grid>
 </Window>

@@ -20,6 +20,11 @@ using System.Threading;
 using static System.Collections.Specialized.BitVector32;
 using System.ComponentModel;
 using System.Security.Policy;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Numerics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Windows.Markup;
 
 namespace WpfApp
 {
@@ -33,6 +38,10 @@ namespace WpfApp
         public static NuGetNN.NeuralNetwork neuralNetwork = null;
         CancellationTokenSource token = new CancellationTokenSource();
         string hobbit = null;
+        public string jsonDataFileName = "data.json";
+        public string jsonHistoryFileName = "history.json";
+        public string jsonDataBackupFileName = "data_backup.json";
+        public string jsonHistoryBackupFileName = "history_backup.json";
         public MainWindow()
         {
             InitializeComponent();
@@ -52,6 +61,16 @@ namespace WpfApp
                 UploadTextBlock.Text = "Upload the text file in order to ask questions.";
                 SendButton.IsEnabled = false;
                 QuestionTextBox.IsEnabled = false;
+            }
+
+            if (File.Exists(jsonHistoryFileName))
+            {
+                var json = JToken.Parse(File.ReadAllText(jsonHistoryFileName));               
+                for (int i = 0; i < json.Count(); i++)
+                {
+                    AddToChat("Question: " + json[i]["Question"].ToString());
+                    AddToChat("NN's answer: " + json[i]["Answer"].ToString());
+                }
             }
 
             string downloadUrl = "https://storage.yandexcloud.net/dotnet4/bert-large-uncased-whole-word-masking-finetuned-squad.onnx";
@@ -100,18 +119,112 @@ namespace WpfApp
             }
             else
             {
-                var answer = await NuGetNN.NeuralNetwork.NNAnswerAsync(question, hobbit, token.Token);
-                if (answer == null)
-                {
-                    AddToChat("The NN model was not downloaded. Please ask again.");
+                File.Copy(jsonDataFileName, jsonDataBackupFileName);
+                File.Copy(jsonHistoryFileName, jsonHistoryBackupFileName);
+                try 
+                { 
+                    string jsonAnswer = null;
+                    question = question.Replace("?", " ").Trim().ToLower();
+                    if (File.Exists(jsonDataFileName))
+                    {
+                        var json = JToken.Parse(File.ReadAllText(jsonDataFileName));
+                        for (int i = 0; i < json.Count(); i++)
+                        {
+                            if (json[i]["Question"].ToString() == question)
+                            {
+                                jsonAnswer = json[i]["Answer"].ToString();
+                            }
+                        }
+                    }
+                    if (jsonAnswer != null)
+                    {
+                        var jsonHistoryList = new List<AskedQuestions>();
+                        if (File.Exists(jsonHistoryFileName))
+                        {
+                            var jsonData = File.ReadAllText(jsonHistoryFileName);
+                            jsonHistoryList = JsonConvert.DeserializeObject<List<AskedQuestions>>(jsonData);
+                        }
+                        var newData = new AskedQuestions()
+                        {
+                            Question = question,
+                            Answer = jsonAnswer
+                        };
+                        jsonHistoryList.Add(newData);
+                        var newJsonData = JsonConvert.SerializeObject(jsonHistoryList);
+                        File.WriteAllText(jsonHistoryFileName, newJsonData);
+                        AddToChat("NN's answer (from json): " + jsonAnswer);
+                    }
+                    else
+                    {
+                        var answer = await NuGetNN.NeuralNetwork.NNAnswerAsync(question, hobbit, token.Token);
+                        if (answer == null)
+                        {
+                            AddToChat("The NN model was not downloaded. Please ask again.");
+                        }
+                        else
+                        {
+                            var newData = new AskedQuestions()
+                            {
+                                Question = question,
+                                Answer = answer
+                            };
+
+                            var jsonDataList = new List<AskedQuestions>();
+                            if (File.Exists(jsonHistoryFileName))
+                            {
+                                var jsonData = File.ReadAllText(jsonDataFileName);
+                                jsonDataList = JsonConvert.DeserializeObject<List<AskedQuestions>>(jsonData);
+                            }
+                            jsonDataList.Add(newData);
+                            var newJsonData = JsonConvert.SerializeObject(jsonDataList);
+                            File.WriteAllText(jsonDataFileName, newJsonData);
+
+                            var jsonHistoryList = new List<AskedQuestions>();
+                            if (File.Exists(jsonHistoryFileName))
+                            {
+                                var jsonData = File.ReadAllText(jsonHistoryFileName);
+                                jsonHistoryList = JsonConvert.DeserializeObject<List<AskedQuestions>>(jsonData);
+                            }
+                            jsonHistoryList.Add(newData);
+                            newJsonData = JsonConvert.SerializeObject(jsonHistoryList);
+                            File.WriteAllText(jsonHistoryFileName, newJsonData);
+
+                            AddToChat("NN's answer: " + answer);
+                        }
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    AddToChat("NN's answer: " + answer);
+                    File.Copy(jsonDataBackupFileName, jsonDataFileName);
+                    File.Copy(jsonHistoryBackupFileName, jsonHistoryFileName);
+                    MessageBox.Show($"Error while updating json: {ex.Message}");
                 }
+                File.Delete(jsonDataBackupFileName);
+                File.Delete(jsonHistoryBackupFileName);
             }
             SendButton.IsEnabled = true;
             QuestionTextBox.IsEnabled = true;   
+        }
+        private void ClearChatHistory_Click(object sender, RoutedEventArgs e)
+        {
+            if (File.Exists(jsonHistoryFileName))
+            {
+                File.Delete(jsonHistoryFileName);
+                File.Delete(jsonDataFileName);
+                ChatListView.Items.Clear();
+                if (hobbit !=  null)
+                {
+                    AddToChat("Text:\n" + hobbit);
+                }
+                ChatScrollViewer.ScrollToBottom();
+            }
+
+        }
+        public class AskedQuestions
+        {
+            public string Question { get; set; }
+
+            public string Answer { get; set; }
         }
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
