@@ -119,14 +119,14 @@ namespace WpfApp
             }
             else
             {
-                File.Copy(jsonDataFileName, jsonDataBackupFileName);
-                File.Copy(jsonHistoryFileName, jsonHistoryBackupFileName);
                 try 
                 { 
                     string jsonAnswer = null;
                     question = question.Replace("?", " ").Trim().ToLower();
                     if (File.Exists(jsonDataFileName))
                     {
+                        File.Copy(jsonDataFileName, jsonDataBackupFileName);
+                        File.Copy(jsonHistoryFileName, jsonHistoryBackupFileName);
                         var json = JToken.Parse(File.ReadAllText(jsonDataFileName));
                         for (int i = 0; i < json.Count(); i++)
                         {
