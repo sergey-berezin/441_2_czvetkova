@@ -66,20 +66,22 @@ namespace WpfApp
 
             if (File.Exists(jsonHistoryFileName))
             {
-                var json = JToken.Parse(File.ReadAllText(jsonHistoryFileName)); 
-                var index = 0;
+                var json = JToken.Parse(File.ReadAllText(jsonHistoryFileName));
+                int index = -1;
                 for (int i = 0; i < json.Count(); i++)
                 {
                     if (json[i]["TextName"].ToString() == textFileName)
                         index = i;
-                }              
-                for (int i = 0; i < json[index]["TextAskedQuestions"].Count(); i++)
+                }
+                if (index != -1)
                 {
-                    AddToChat("Question: " + json[index]["TextAskedQuestions"][i]["Question"].ToString());
-                    AddToChat("NN's answer: " + json[index]["TextAskedQuestions"][i]["Answer"].ToString());
+                    for (int i = 0; i < json[index]["TextAskedQuestions"].Count(); i++)
+                    {
+                        AddToChat("Question: " + json[index]["TextAskedQuestions"][i]["Question"].ToString());
+                        AddToChat("NN's answer: " + json[index]["TextAskedQuestions"][i]["Answer"].ToString());
+                    }
                 }
             }
-
             string downloadUrl = "https://storage.yandexcloud.net/dotnet4/bert-large-uncased-whole-word-masking-finetuned-squad.onnx";
             string NNFileName = "bert-large-uncased-whole-word-masking-finetuned-squad.onnx";
             neuralNetwork = new NuGetNN.NeuralNetwork(downloadUrl, NNFileName, new FileService());
@@ -95,6 +97,24 @@ namespace WpfApp
                 AddToChat("Text:\n" + hobbit);
                 SendButton.IsEnabled = true;
                 QuestionTextBox.IsEnabled = true;
+                if (File.Exists(jsonHistoryFileName))
+                {
+                    var json = JToken.Parse(File.ReadAllText(jsonHistoryFileName));
+                    int index = -1;
+                    for (int i = 0; i < json.Count(); i++)
+                    {
+                        if (json[i]["TextName"].ToString() == textFileName)
+                            index = i;
+                    }
+                    if (index != -1)
+                    {
+                        for (int i = 0; i < json[index]["TextAskedQuestions"].Count(); i++)
+                        {
+                            AddToChat("Question: " + json[index]["TextAskedQuestions"][i]["Question"].ToString());
+                            AddToChat("NN's answer: " + json[index]["TextAskedQuestions"][i]["Answer"].ToString());
+                        }
+                    }
+                }
             }
             else
             {
