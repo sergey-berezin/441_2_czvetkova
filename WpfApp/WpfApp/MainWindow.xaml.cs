@@ -25,6 +25,7 @@ using Newtonsoft.Json.Linq;
 using System.Numerics;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Windows.Markup;
+using System.Reflection;
 
 namespace WpfApp
 {
@@ -65,11 +66,17 @@ namespace WpfApp
 
             if (File.Exists(jsonHistoryFileName))
             {
-                var json = JToken.Parse(File.ReadAllText(jsonHistoryFileName));               
+                var json = JToken.Parse(File.ReadAllText(jsonHistoryFileName)); 
+                var index = 0;
                 for (int i = 0; i < json.Count(); i++)
                 {
-                    AddToChat("Question: " + json[i]["Question"].ToString());
-                    AddToChat("NN's answer: " + json[i]["Answer"].ToString());
+                    if (json[i]["TextName"].ToString() == textFileName)
+                        index = i;
+                }              
+                for (int i = 0; i < json[index]["TextAskedQuestions"].Count(); i++)
+                {
+                    AddToChat("Question: " + json[index]["TextAskedQuestions"][i]["Question"].ToString());
+                    AddToChat("NN's answer: " + json[index]["TextAskedQuestions"][i]["Answer"].ToString());
                 }
             }
 
@@ -128,28 +135,51 @@ namespace WpfApp
                         File.Copy(jsonDataFileName, jsonDataBackupFileName);
                         File.Copy(jsonHistoryFileName, jsonHistoryBackupFileName);
                         var json = JToken.Parse(File.ReadAllText(jsonDataFileName));
+                        int index = -1;
                         for (int i = 0; i < json.Count(); i++)
                         {
-                            if (json[i]["Question"].ToString() == question)
+                            if (json[i]["TextName"].ToString() == textFileName)
+                                index = i;
+                        }
+                        if (index != -1)
+                        {
+                            for (int i = 0; i < json[index]["TextAskedQuestions"].Count(); i++)
                             {
-                                jsonAnswer = json[i]["Answer"].ToString();
+                                if (json[index]["TextAskedQuestions"][i]["Question"].ToString() == question)
+                                {
+                                    jsonAnswer = json[index]["TextAskedQuestions"][i]["Answer"].ToString();
+                                }
                             }
                         }
                     }
                     if (jsonAnswer != null)
                     {
-                        var jsonHistoryList = new List<AskedQuestions>();
+                        var jsonHistoryList = new List<Text>();
                         if (File.Exists(jsonHistoryFileName))
                         {
                             var jsonData = File.ReadAllText(jsonHistoryFileName);
-                            jsonHistoryList = JsonConvert.DeserializeObject<List<AskedQuestions>>(jsonData);
+                            jsonHistoryList = JsonConvert.DeserializeObject<List<Text>>(jsonData);
                         }
                         var newData = new AskedQuestions()
                         {
                             Question = question,
                             Answer = jsonAnswer
                         };
-                        jsonHistoryList.Add(newData);
+                        int index = -1;
+                        for (int i = 0; i < jsonHistoryList.Count; i++)
+                        {
+                            if (jsonHistoryList[i].TextName == textFileName)
+                                index = i;
+                        }
+                        if (index == -1)
+                        {
+                            var curText = new Text();
+                            curText.TextName = textFileName;
+                            curText.TextAskedQuestions = new List<AskedQuestions>();
+                            index = jsonHistoryList.Count;
+                            jsonHistoryList.Add(curText);
+                        }
+                        jsonHistoryList[index].TextAskedQuestions.Add(newData);
                         var newJsonData = JsonConvert.SerializeObject(jsonHistoryList);
                         File.WriteAllText(jsonHistoryFileName, newJsonData);
                         AddToChat("NN's answer (from json): " + jsonAnswer);
@@ -169,23 +199,51 @@ namespace WpfApp
                                 Answer = answer
                             };
 
-                            var jsonDataList = new List<AskedQuestions>();
+                            var jsonDataList = new List<Text>();
                             if (File.Exists(jsonHistoryFileName))
                             {
                                 var jsonData = File.ReadAllText(jsonDataFileName);
-                                jsonDataList = JsonConvert.DeserializeObject<List<AskedQuestions>>(jsonData);
+                                jsonDataList = JsonConvert.DeserializeObject<List<Text>>(jsonData);
                             }
-                            jsonDataList.Add(newData);
+                            int index = -1;
+                            for (int i = 0; i < jsonDataList.Count; i++)
+                            {
+                                if (jsonDataList[i].TextName == textFileName)
+                                    index = i;
+                            }
+                            if (index == -1)
+                            {
+                                var curText = new Text();
+                                curText.TextName = textFileName;
+                                curText.TextAskedQuestions = new List<AskedQuestions>();
+                                index = jsonDataList.Count;
+                                jsonDataList.Add(curText);
+                            }
+                            jsonDataList[index].TextAskedQuestions.Add(newData);
                             var newJsonData = JsonConvert.SerializeObject(jsonDataList);
                             File.WriteAllText(jsonDataFileName, newJsonData);
 
-                            var jsonHistoryList = new List<AskedQuestions>();
+                            var jsonHistoryList = new List<Text>();
                             if (File.Exists(jsonHistoryFileName))
                             {
                                 var jsonData = File.ReadAllText(jsonHistoryFileName);
-                                jsonHistoryList = JsonConvert.DeserializeObject<List<AskedQuestions>>(jsonData);
+                                jsonHistoryList = JsonConvert.DeserializeObject<List<Text>>(jsonData);
                             }
-                            jsonHistoryList.Add(newData);
+                            index = -1;
+                            for (int i = 0; i < jsonHistoryList.Count; i++)
+                            {
+                                if (jsonHistoryList[i].TextName == textFileName)
+                                    index = i;
+                            }
+                            if (index == -1)
+                            {
+                                var curText = new Text();
+                                curText.TextName = textFileName;
+                                curText.TextAskedQuestions = new List<AskedQuestions>();
+                                index = jsonHistoryList.Count;
+                                jsonHistoryList.Add(curText);
+                            }
+                            jsonHistoryList[index].TextAskedQuestions.Add(newData);
                             newJsonData = JsonConvert.SerializeObject(jsonHistoryList);
                             File.WriteAllText(jsonHistoryFileName, newJsonData);
 
@@ -219,6 +277,11 @@ namespace WpfApp
                 ChatScrollViewer.ScrollToBottom();
             }
 
+        }
+        public class Text
+        {
+            public string TextName { get; set; }
+            public List<AskedQuestions> TextAskedQuestions;
         }
         public class AskedQuestions
         {
