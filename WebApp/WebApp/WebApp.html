@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>NN WebApp</title>
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Neural Network Answers</h1>
+        <div>
+            <textarea id="textArea" rows="10" cols="50" placeholder="Enter your text"></textarea>
+        </div>
+        <div>
+            <button onclick="sendText()">Send</button>
+        </div>
+        <div>
+            <input type="text" id="questionInput" placeholder="Enter your question">
+            <button id="askButton" disabled onclick="askQuestion()">Ask</button>
+        </div>
+        <div id="queryInProgress" style="display: none;">
+            <p>Query in progress...</p>
+        </div>
+        <div textarea id="answerDisplay"></div>
+    </div>
+
+    <script >   
+        let textId = "";
+        async function sendText() {
+            const text = document.getElementById('textArea').value;
+            if (text.length == 0) {
+                alert("Please enter your text")
+                return; 
+            }
+            await fetch("http://localhost:5247/api/WebApp", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(text),
+            })
+            .then(response => {
+                return response.text();
+            })
+            .then(data => {
+                console.log(data);
+                textId = data;              
+                document.getElementById("askButton").disabled = false;
+            })
+            .catch(error => {
+                alert(error)
+                console.error("Error: ", error);  
+            });
+        }
+
+        async function askQuestion() {
+            if (textId == "") {
+                alert("Please enter your text")
+                return;
+            }
+            const question = document.getElementById('questionInput').value;
+            if (question == "") {
+                alert("Please enter your question")
+                return;
+            }
+            let answer;
+            document.getElementById('questionInput').value = "";
+            document.getElementById('queryInProgress').style.display = 'block';
+            await fetch("http://localhost:5247/api/WebApp?" + new URLSearchParams({
+                textId: textId,
+                question: question,
+            }))
+            .then(response => {
+                return response.text();
+            })
+            .then(result => {
+                console.log(result);
+                answer = result;
+            })
+            document.getElementById('answerDisplay').innerText = "Question: " + question + "\nAnswer: " + answer;
+            document.getElementById('queryInProgress').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
+
+
