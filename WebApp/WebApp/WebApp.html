@@ -69,11 +69,17 @@
             }
             document.getElementById('questionInput').value = "";
             document.getElementById('queryInProgress').style.display = 'block';
-            response = await fetch("http://localhost:5247/api/WebApp?" + new URLSearchParams({
-                textId: textId,
-                question: question,
-            }));
-            answer = await response.text();
+            try {
+                response = await fetch("http://localhost:5247/api/WebApp?" + new URLSearchParams({
+                    textId: textId,
+                    question: question,
+                }));
+                answer = await response.text();
+            }
+            catch (error) {
+                alert(error)
+                console.error("Error: ", error);
+            }
             document.getElementById('answerDisplay').innerText = "Question: " + question + "\nAnswer: " + answer;
             document.getElementById('queryInProgress').style.display = 'none';
         }
