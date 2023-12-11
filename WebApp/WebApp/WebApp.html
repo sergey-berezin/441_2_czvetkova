@@ -39,25 +39,22 @@
                 alert("Please enter your text")
                 return; 
             }
-            await fetch("http://localhost:5247/api/WebApp", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(text),
-            })
-            .then(response => {
-                return response.text();
-            })
-            .then(data => {
-                console.log(data);
-                textId = data;              
+            try {
+                response = await fetch("http://localhost:5247/api/WebApp", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(text),
+                });
+                textId = await response.text();
+                console.log(textId);
                 document.getElementById("askButton").disabled = false;
-            })
-            .catch(error => {
+            }
+            catch (error) {
                 alert(error)
                 console.error("Error: ", error);  
-            });
+            }
         }
 
         async function askQuestion() {
@@ -70,20 +67,13 @@
                 alert("Please enter your question")
                 return;
             }
-            let answer;
             document.getElementById('questionInput').value = "";
             document.getElementById('queryInProgress').style.display = 'block';
-            await fetch("http://localhost:5247/api/WebApp?" + new URLSearchParams({
+            response = await fetch("http://localhost:5247/api/WebApp?" + new URLSearchParams({
                 textId: textId,
                 question: question,
-            }))
-            .then(response => {
-                return response.text();
-            })
-            .then(result => {
-                console.log(result);
-                answer = result;
-            })
+            }));
+            answer = await response.text();
             document.getElementById('answerDisplay').innerText = "Question: " + question + "\nAnswer: " + answer;
             document.getElementById('queryInProgress').style.display = 'none';
         }
